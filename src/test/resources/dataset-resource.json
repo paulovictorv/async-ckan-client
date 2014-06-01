@@ -1,0 +1,25 @@
+{
+    "resource_group_id": "27279ceb-dd2b-4e02-a0e0-898d75e88c1e",
+    "cache_last_updated": null,
+    "package_id": "000a8189-cad0-4ff9-990b-24c2344486d6",
+    "webstore_last_updated": null,
+    "id": "50e93f1c-c594-4805-b041-d858ba10d6b5",
+    "size": "0",
+    "last_modified": null,
+    "hash": "",
+    "description": "Dados sobre Taxa de Reprovação - Ensino Médio (Rede Privada) no formato JSON",
+    "format": ".json",
+    "tracking_summary": {
+        "total": 0,
+        "recent": 0
+    },
+    "mimetype_inner": null,
+    "mimetype": null,
+    "cache_url": null,
+    "name": "Taxa de Reprovação - Ensino Médio (Rede Privada) no formato JSON",
+    "created": "2014-05-20T09:11:52.683298",
+    "url": "http://geo.seplande.al.gov.br/geoweb/wizard/php/ckan.php?var=102208&exportar=json&nivel=mun",
+    "webstore_url": null,
+    "position": 3,
+    "resource_type": "file"
+}
