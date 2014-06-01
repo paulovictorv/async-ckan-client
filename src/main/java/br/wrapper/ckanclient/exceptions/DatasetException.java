@@ -9,4 +9,8 @@ public class DatasetException extends Throwable {
     public DatasetException(String s, IOException e) {
         super(s,e);
     }
+
+    public DatasetException(String s) {
+        super(s);
+    }
 }

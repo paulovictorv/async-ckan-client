@@ -80,7 +80,7 @@ public class CKANClient {
 
         final CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
 
-        final HttpGet httpGet = new HttpGet(this.rootUri.toString() + dataset);
+        final HttpGet httpGet = new HttpGet(this.rootUri.toString() + "/" + dataset);
         httpGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 
         client.start();
@@ -88,10 +88,15 @@ public class CKANClient {
             @Override
             public void completed(HttpResponse httpResponse) {
                 try {
-                    final InputStream content = httpResponse.getEntity().getContent();
-                    ObjectMapper mapper = new ObjectMapper();
-                    final JsonNode jsonNode = mapper.readTree(content);
-                    deferredObject.resolve(new DatasetDescription(jsonNode));
+                    final int statusCode = httpResponse.getStatusLine().getStatusCode();
+                    if (statusCode != 200){
+                        deferredObject.reject(new DatasetException("Dataset not found"));
+                    } else {
+                        final InputStream content = httpResponse.getEntity().getContent();
+                        ObjectMapper mapper = new ObjectMapper();
+                        final JsonNode jsonNode = mapper.readTree(content);
+                        deferredObject.resolve(new DatasetDescription(jsonNode));
+                    }
                     client.close();
                 } catch (IOException e) {
                     deferredObject.reject(e);

@@ -2,6 +2,7 @@ package br.wrapper.ckanclient;
 
 import br.wrapper.ckanclient.model.DatasetDescription;
 import org.jdeferred.DoneCallback;
+import org.jdeferred.FailCallback;
 import org.jdeferred.Promise;
 import org.junit.Test;
 
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.fest.assertions.Fail.fail;
 
 /**
  * Created by Paulo on 31/05/14.
@@ -66,9 +68,15 @@ public class CKANClientTest {
             .then(new DoneCallback<DatasetDescription>() {
                 @Override
                 public void onDone(DatasetDescription datasetDescription) {
-                    assertThat(datasetDescription).isNotNull();
+                assertThat(datasetDescription).isNotNull();
+                    System.out.println(datasetDescription.resources);
                 }
-            });
+            }, new FailCallback() {
+                  @Override
+                  public void onFail(Object o) {
+                      fail();
+                  }
+              });
 
         promiseOfDatasetDescription.waitSafely();
     }

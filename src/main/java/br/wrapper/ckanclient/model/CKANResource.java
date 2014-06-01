@@ -31,8 +31,8 @@ public class CKANResource {
 
     @JsonCreator
     public CKANResource(@JsonProperty("id") String id,
-                        @JsonProperty("resource-group-id") String resourceId,
-                        @JsonProperty("package-id") String packageId,
+                        @JsonProperty("resource_group_id") String resourceId,
+                        @JsonProperty("package_id") String packageId,
                         @JsonProperty("description") String description,
                         @JsonProperty("format") String format,
                         @JsonProperty("mimetype_inner") String mimeType){
@@ -53,5 +53,15 @@ public class CKANResource {
         }
     }
 
-
+    @Override
+    public String toString() {
+        return "CKANResource{" +
+                "id='" + id + '\'' +
+                ", resourceId='" + resourceId + '\'' +
+                ", packageId='" + packageId + '\'' +
+                ", description='" + description + '\'' +
+                ", format='" + format + '\'' +
+                ", mimeType='" + mimeType + '\'' +
+                '}';
+    }
 }
