@@ -63,13 +63,11 @@ public class CKANClientTest {
         CKANClient client = new CKANClient(CKAN_URL);
         Promise promiseOfDatasetDescription = client.getDataset("indicadores-taxa-de-reprovaaao-ensino-madio-rede-privada");
 
-
         promiseOfDatasetDescription
             .then(new DoneCallback<DatasetDescription>() {
                 @Override
                 public void onDone(DatasetDescription datasetDescription) {
                 assertThat(datasetDescription).isNotNull();
-                    System.out.println(datasetDescription.resources);
                 }
             }, new FailCallback() {
                   @Override

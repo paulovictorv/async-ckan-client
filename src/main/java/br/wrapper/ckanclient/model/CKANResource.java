@@ -4,6 +4,16 @@ import br.wrapper.ckanclient.model.util.MimeTypeManager;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.http.HttpResponse;
+import org.jdeferred.DoneCallback;
+import org.jdeferred.FailCallback;
+import org.jdeferred.Promise;
+import org.jdeferred.impl.DeferredObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Created by Paulo on 31/05/14.
@@ -29,13 +39,16 @@ public class CKANResource {
     @JsonProperty("mimetype_inner")
     public String mimeType;
 
+    public URI resourceUrl;
+
     @JsonCreator
     public CKANResource(@JsonProperty("id") String id,
                         @JsonProperty("resource_group_id") String resourceId,
                         @JsonProperty("package_id") String packageId,
                         @JsonProperty("description") String description,
                         @JsonProperty("format") String format,
-                        @JsonProperty("mimetype_inner") String mimeType){
+                        @JsonProperty("mimetype_inner") String mimeType,
+                        @JsonProperty("url") String url) throws URISyntaxException {
 
         this.id = id;
         this.resourceId = resourceId;
@@ -43,6 +56,7 @@ public class CKANResource {
         this.description = description;
         this.format = format;
         this.mimeType = parseMime(mimeType);
+        this.resourceUrl = new URI(url);
     }
 
     private String parseMime(String mimeType) {
@@ -62,6 +76,31 @@ public class CKANResource {
                 ", description='" + description + '\'' +
                 ", format='" + format + '\'' +
                 ", mimeType='" + mimeType + '\'' +
+                ", resourceUrl=" + resourceUrl +
                 '}';
+    }
+
+    public Promise<InputStream, Throwable, Double> getResource() {
+        final DeferredObject<InputStream, Throwable, Double> deferred = new DeferredObject<InputStream, Throwable, Double>();
+
+        Promise<HttpResponse, Throwable, Double> promise = HttpAsyncUtils.doGet(this.resourceUrl);
+
+        promise.done(new DoneCallback<HttpResponse>() {
+            @Override
+            public void onDone(HttpResponse httpResponse) {
+                try {
+                    deferred.resolve(httpResponse.getEntity().getContent());
+                } catch (IOException e) {
+                    deferred.reject(e);
+                }
+            }
+        }).fail(new FailCallback<Throwable>() {
+                @Override
+                public void onFail(Throwable throwable) {
+                    deferred.reject(throwable);     
+                }
+       });
+
+        return deferred.promise();
     }
 }

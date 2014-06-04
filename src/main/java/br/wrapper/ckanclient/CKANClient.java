@@ -2,15 +2,14 @@ package br.wrapper.ckanclient;
 
 import br.wrapper.ckanclient.exceptions.DatasetException;
 import br.wrapper.ckanclient.model.DatasetDescription;
+import br.wrapper.ckanclient.model.HttpAsyncUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.client.HttpResponseException;
 import org.jdeferred.DeferredManager;
+import org.jdeferred.DoneCallback;
+import org.jdeferred.FailCallback;
 import org.jdeferred.Promise;
 import org.jdeferred.impl.DefaultDeferredManager;
 import org.jdeferred.impl.DeferredObject;
@@ -42,35 +41,31 @@ public class CKANClient {
         final DeferredObject<List<DatasetDescription>, Throwable, Double> deferredObject =
                 new DeferredObject<List<DatasetDescription>, Throwable, Double>();
 
-        final CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
-
-        final HttpGet httpGet = new HttpGet(this.rootUri);
-        client.start();
-        client.execute(httpGet, new FutureCallback<HttpResponse>() {
-            @Override
-            public void completed(HttpResponse httpResponse) {
-                try {
-                    final InputStream content = httpResponse.getEntity().getContent();
-                    final List<DatasetDescription> datasetDescriptions = DatasetDescription.extractDatasets(content);
-                    deferredObject.resolve(datasetDescriptions);
-                    client.close();
-                } catch (IOException e) {
-                    deferredObject.reject(e);
-                } catch (DatasetException e) {
-                    deferredObject.reject(e);
-                }
-            }
-
-            @Override
-            public void failed(Exception e) {
-                deferredObject.reject(e);
-            }
-
-            @Override
-            public void cancelled() {
-                deferredObject.reject(new Exception("Request cancelled."));
-            }
-        });
+        HttpAsyncUtils.doGet(this.rootUri)
+                .done( new DoneCallback<HttpResponse>() {
+                    @Override
+                    public void onDone(HttpResponse httpResponse) {
+                        try {
+                            final InputStream content = httpResponse.getEntity().getContent();
+                            final List<DatasetDescription> datasetDescriptions = DatasetDescription.extractDatasets(content);
+                            deferredObject.resolve(datasetDescriptions);
+                        } catch (IOException e) {
+                            deferredObject.reject(e);
+                        } catch (DatasetException e) {
+                            deferredObject.reject(e);
+                        }
+                    }
+                })
+                .fail( new FailCallback<Throwable>() {
+                    @Override
+                    public void onFail(Throwable throwable) {
+                        if (throwable instanceof HttpResponseException){
+                            deferredObject.reject(new DatasetException("Dataset not found"));
+                        } else {
+                            deferredObject.reject(throwable);
+                        }
+                    }
+                });
 
         return deferredObject.promise();
     }
@@ -78,43 +73,39 @@ public class CKANClient {
     public Promise<DatasetDescription, Throwable, Double> getDataset(String dataset) {
         final DeferredObject<DatasetDescription, Throwable, Double> deferredObject = new DeferredObject<DatasetDescription, Throwable, Double>();
 
-        final CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
+        try {
+            HttpAsyncUtils.doGet(new URI(this.rootUri.toString() + "/" + dataset))
+                    .done( new DoneCallback<HttpResponse>() {
+                        @Override
+                        public void onDone(HttpResponse httpResponse) {
+                            try {
+                                final int statusCode = httpResponse.getStatusLine().getStatusCode();
+                                if (statusCode != 200){
+                                    deferredObject.reject(new DatasetException("Dataset not found"));
+                                } else {
+                                    final InputStream content = httpResponse.getEntity().getContent();
+                                    ObjectMapper mapper = new ObjectMapper();
+                                    final JsonNode jsonNode = mapper.readTree(content);
+                                    deferredObject.resolve(new DatasetDescription(jsonNode));
+                                }
+                            } catch (IOException e) {
+                                deferredObject.reject(e);
+                            } catch (DatasetException e) {
+                                deferredObject.reject(e);
+                            }
+                        }
+                    })
+                    .fail(new FailCallback<Throwable>() {
+                        @Override
+                        public void onFail(Throwable throwable) {
+                            deferredObject.reject(throwable);
+                        }
+                    });
 
-        final HttpGet httpGet = new HttpGet(this.rootUri.toString() + "/" + dataset);
-        httpGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+        } catch (URISyntaxException e) {
+           deferredObject.reject(e);
+        }
 
-        client.start();
-        client.execute(httpGet, new FutureCallback<HttpResponse>() {
-            @Override
-            public void completed(HttpResponse httpResponse) {
-                try {
-                    final int statusCode = httpResponse.getStatusLine().getStatusCode();
-                    if (statusCode != 200){
-                        deferredObject.reject(new DatasetException("Dataset not found"));
-                    } else {
-                        final InputStream content = httpResponse.getEntity().getContent();
-                        ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode jsonNode = mapper.readTree(content);
-                        deferredObject.resolve(new DatasetDescription(jsonNode));
-                    }
-                    client.close();
-                } catch (IOException e) {
-                    deferredObject.reject(e);
-                } catch (DatasetException e) {
-                    deferredObject.reject(e);
-                }
-            }
-
-            @Override
-            public void failed(Exception e) {
-                deferredObject.reject(e);
-            }
-
-            @Override
-            public void cancelled() {
-                deferredObject.reject(new Exception("Request cancelled."));
-            }
-        });
 
         return deferredObject.promise();
     }
