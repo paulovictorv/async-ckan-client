@@ -45,4 +45,11 @@ public class DatasetDescriptionTest {
         final DatasetDescription desc = new DatasetDescription(datasetDescription);
         assertThat(desc.resources).hasSize(4);
     }
+
+    @Test
+    public void shouldObtainResourceWithGivenMime() throws DatasetException {
+        DatasetDescription description = new DatasetDescription(datasetDescription);
+        CKANResource resource = description.getResourceWithMimeType("application/json");
+        assertThat(resource.mimeType).isEqualToIgnoringCase("application/json");
+    }
 }

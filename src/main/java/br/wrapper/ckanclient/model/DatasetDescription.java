@@ -68,4 +68,12 @@ public class DatasetDescription {
     public int hashCode() {
         return datasetName != null ? datasetName.hashCode() : 0;
     }
+
+    public CKANResource getResourceWithMimeType(String s) {
+        for (CKANResource resource : resources) {
+            if (resource.mimeType.equals(s))
+                return resource;
+        }
+        return null;
+    }
 }
